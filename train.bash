@@ -11,5 +11,5 @@ python -m torch.distributed.launch \
     --lr 0.01 \
     --loss_lambda 0.4 \
     --num_hard 5 \
-    --neg_table_name "path to neg table" \
+    --neg_table_name "path to negative table" \
     --output_dir "path to output"
