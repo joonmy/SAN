@@ -10,7 +10,7 @@ conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit
 pip install -r requirement.txt
 ```
 
-## Prepare the Visual Encoder
+## Prepare the Visual Encoder and Dataset
 
 ```
 cd model/
