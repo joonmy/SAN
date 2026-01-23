@@ -177,7 +177,7 @@ class S2T_Dataset(Dataset.Dataset):
             hard_tgt_batch = self.generate_hard_negatives(
                 tgt_batch,
                 self.hard_negative_table,
-                num_negatives=5
+                num_negatives=self.args.num_hard
             )
             flat_hard_tgt_batch = [neg for sublist in hard_tgt_batch for neg in sublist] # B x num_negatives
         else:

@@ -65,6 +65,7 @@ def get_args_parser():
     parser.add_argument('--epochs', default=80, type=int)
     
     parser.add_argument('--neg_table_name', default='', type=str)
+    parser.add_argument('--num_hard', default=5, type=int)
 
 
     # distributed training parameters
@@ -155,7 +156,7 @@ def get_args_parser():
     parser.add_argument('--noise-type', default='omit_last', type=str, choices=['omit', 'omit_last'])
     parser.add_argument('--random-shuffle', default=False, type=bool)
 
-    parser.add_argument('--loss-lambda', type=float, default=0, metavar='RATE',
+    parser.add_argument('--loss_lambda', type=float, default=0, metavar='RATE',
                         help='lambda param')
 
     return parser
@@ -345,7 +346,7 @@ def train_one_epoch(args, model: torch.nn.Module, criterion: nn.CrossEntropyLoss
             loss_imgs = loss_crossen(logits_per_image)
             loss_texts = loss_crossen(logits_per_text)
             loss_hard = loss_crossen(hard_i2t_sim, is_hard=True)
-            total_loss = (loss_imgs + loss_texts)/2. + 0.4*loss_hard
+            total_loss = (loss_imgs + loss_texts)/2. + args.loss_lambda * loss_hard
         loss_scaler(total_loss, optimizer)
 
         loss_value = total_loss.item()

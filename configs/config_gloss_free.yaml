@@ -1,15 +1,13 @@
 name: GFSLT-VLP
 data:
-  train_label_path: "/home/user/jmlee/final_exp/labels.train.cleaned"
-  dev_label_path: "/home/user/jmlee/final_exp/labels.dev.cleaned"
-  test_label_path: "/home/user/jmlee/final_exp/labels.test.cleaned"
+  train_label_path: "./data/labels.train.cleaned"
+  dev_label_path: "./data/labels.dev.cleaned"
+  test_label_path: "./data/labels.test.cleaned"
   img_path: "/home/user/jmlee/phoenix_domain_agnostic"
   max_length: 300
 training:
   wandb: online # online or disabled
-  scale_embedding: False
 model:
-  tokenizer: /home/david516/TEST/GFSLT-VLP/official_model_checkpoint/BERT_origin
-  transformer:  /home/david516/TEST/GFSLT-VLP/official_model_checkpoint/BERT_origin
-  visual_encoder: /home/user/jmlee/final_exp/768-3
-  sign_proj: True
+  visual_encoder: ./model/768-3
+
+# ../model/768-3

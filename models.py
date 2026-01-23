@@ -140,45 +140,13 @@ def make_head(inplanes, planes, head_type):
 class TextCLIP(nn.Module):
     def __init__(self, config=None, inplanes=1024, planes=1024, head_type='identy'):
         super(TextCLIP, self).__init__()
-
-        # self.text_encoder = MBartForConditionalGeneration.from_pretrained(config['model']['transformer']).get_encoder() 
-        # self.text_encoder= MBartForConditionalGeneration.from_pretrained("facebook/mbart-large-cc25").get_encoder() 
         self.text_encoder = BertModel.from_pretrained("google-bert/bert-base-german-cased")
-        # for param in self.text_encoder.embeddings.parameters():
-        #     param.requires_grad = False
-        # self.model_txt = BertModel.from_pretrained("dbmdz/bert-base-german-uncased")
-        # self.text_encoder = CLIPTextModel.from_pretrained(
-        #     "openai/clip-vit-base-patch32"
-        # )
-        # lora_config = LoraConfig(
-        #     r=16,
-        #     lora_alpha=32,
-        #     target_modules=["q_proj", "v_proj", "k_proj", "out_proj"],  # Apply LoRA to query and value layers
-        #     lora_dropout=0.1,
-        #     bias="none",
-        #     task_type="ENCODER"
-        # )
-        # self.text_encoder = get_peft_model(self.text_encoder, lora_config)
-        # self.clip_text = CLIPTextModelWithProjection.from_pretrained("openai/clip-vit-base-patch32")
-        # self.encoder = self.clip_text.text_model
-        # self.projection = self.clip_text.text_projection
-
-        # self.final_ln = self.clip_text.text_model.final_layer_norm
-        # self.lm_head = make_head(inplanes, planes, 'head_type')
-
         self.lm_head = nn.Linear(768, 512, bias=False)
-        # self.lm_head = nn .Sequential(
-        #     nn.Linear(768, 512, bias=False),
-        #     nn.ReLU(inplace=True),
-        #     nn.Linear(512, 768, bias=False)
-        # )
 
     def forward(self, tgt_input):
         output = self.text_encoder(input_ids=tgt_input['input_ids'].cuda(), attention_mask=tgt_input['attention_mask'].cuda())[0]
         output = self.lm_head(output)
-        # remove cls token
-        # output = output[:, 1:, :]  # (B, L+1, D) -> (B, L, D)
-        # tgt_input['attention_mask'] = tgt_input['attention_mask'][:, 1:]  # (B, L+1) -> (B, L)
+
         return output, tgt_input['attention_mask'].cuda()
 
 class ImageCLIP(nn.Module):
@@ -187,25 +155,7 @@ class ImageCLIP(nn.Module):
         self.config = config
         self.linear = nn.Linear(1024, 768, bias=False)
         self.vision_encoder = MBartForConditionalGeneration.from_pretrained(config['model']['visual_encoder']).get_encoder()
-        # self.vision_encoder = MBartForConditionalGeneration.from_pretrained("facebook/mbart-large-cc25").get_encoder()
-        # self.vision_encoder = BertModel.from_pretrained("google-bert/bert-base-german-cased")
-        # freeze embedding layer
-        # for param in self.vision_encoder.embeddings.parameters():
-        #     param.requires_grad = False
-        # self.vision_encoder = CLIPVisionModel.from_pretrained(
-        #     "openai/clip-vit-base-patch32"
-        # )
-        # lora_config = LoraConfig(
-        #     r=16,
-        #     lora_alpha=32,
-        #     target_modules=["q_proj", "v_proj", "k_proj", "out_proj"],  # Apply LoRA to query and value layers
-        #     lora_dropout=0.1,
-        #     bias="none",
-        #     task_type="ENCODER"
-        # )
-        # self.vision_encoder = get_peft_model(self.vision_encoder, lora_config)
         self.lm_head = nn.Linear(768, 512, bias=False)
-        # self.trans_encoder.print_trainable_parameters()
 
         
     def forward(self, src_input):
@@ -321,16 +271,17 @@ class SLRCLIP(nn.Module):
         after_softmax_t2i[~text_mask_extended] = 0
         T2I_sim = logit_scale * torch.nansum(after_softmax_t2i, dim=-1) / torch.sum(text_mask_extended, dim=-1)
 
-
+        
+        num_hard = self.args.num_hard
         B_all = total_i2t_sim.shape[0] 
 
         pos_sim = total_i2t_sim[torch.arange(B_all), torch.arange(B_all)].unsqueeze(1) 
 
-        neg_sims_all = total_i2t_sim[:, B_all:].view(B_all, B_all, 3, total_i2t_sim.shape[2], total_i2t_sim.shape[3])
+        neg_sims_all = total_i2t_sim[:, B_all:].view(B_all, B_all, num_hard, total_i2t_sim.shape[2], total_i2t_sim.shape[3])
         neg_sims = neg_sims_all[torch.arange(B_all), torch.arange(B_all)] # [B_all, 5, T, T']
 
         hard_i2t_sim = torch.cat([pos_sim, neg_sims], dim=1)
-        hard_image_mask_extended = gathered_image_masks.unsqueeze(1).repeat(1, 4, 1)
+        hard_image_mask_extended = gathered_image_masks.unsqueeze(1).repeat(1, num_hard+1, 1)
 
         after_softmax_hard_i2t = torch.nansum(hard_i2t_sim * torch.softmax(hard_i2t_sim/0.07, dim=-1), dim=-1) 
         after_softmax_hard_i2t[~hard_image_mask_extended] = 0
