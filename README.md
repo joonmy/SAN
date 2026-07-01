@@ -1,4 +1,4 @@
-Comming Soon
+Coming Soon
 <!--
 
 # Getting Start
